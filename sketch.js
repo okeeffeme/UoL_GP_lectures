@@ -1,66 +1,102 @@
-let traces = [];
+let balls = new Set;
 
 function setup() {
   createCanvas(900, 600);
   background(110);
-
-  for (let i = 0; i < 60; i++) {
-    traces.push(
-      new Trace(color(random(200, 225),225, random(200, 225)))
-    )
-  }
-
+  // ball = new Ball(color(random(200, 225)));
 }
 
 function draw() {
-  background(color(20, 20));
+  background(color(20, 180));
 
-  for (let t of traces) {
-    t.run();
+  const gravity = createVector(0, 0.1);
+
+  for (let b of balls) {
+    if (b.age > 0) {
+      const friction = b.velocity.copy();
+      friction.mult(-1);
+      friction.normalize();
+      friction.mult(0.01);
+      b.applyForce(friction);
+      b.applyForce(gravity);
+      b.run();
+    } else {
+      balls.delete(b)
+    }
   }
 }
 
-class Trace {
-  constructor(colour){
-    this.velocity = createVector(0, 0);
-    this.location = createVector(width/2+random(-10, 10), height/2+random(-10, 10));
-    this.prevLocation = createVector(width/2+random(-10, 10), height/2+random(-10, 10));
+function mouseDragged() {
+  balls.add(new Ball(mouseX, mouseY, color(random(100, 225), random(100, 225), random(100, 225))));
+}
+
+class Ball {
+  constructor(x, y, colour){
+    this.size = random(60, 30);
+    this.velocity = createVector(random(-5, 5), random(-5, 5));
+    this.location = createVector(x, y);
+    // this.prevLocation = createVector(width/2+random(-10, 10), height/2+random(-10, 10));
     // this.acceleration = createVector(0.03, 0);
+    this.acceleration = new createVector(0, 0);
     this.maxVelocity = random(11, 9);
     this.colour = colour;
+    this.age = random(220);
   }
 
   draw(){
-    fill(this.colour);
-    stroke(this.colour);
-    strokeWeight(2);
-    // ellipse(this.location.x, this.location.y, 2,2 )
-    line(this.location.x, this.location.y, this.prevLocation.x, this.prevLocation.y);
-    this.prevLocation= this.location.copy();
+    push();
+      fill(this.colour);
+      stroke(this.colour);
+      strokeWeight(2);
+      
+      drawingContext.shadowBlur = 6;
+      drawingContext.shadowColor = this.colour;
+
+      ellipse(this.location.x, this.location.y, this.size, this.size);
+    pop();
+    // line(this.location.x, this.location.y, this.prevLocation.x, this.prevLocation.y);
+    // this.prevLocation= this.location.copy();
   }
 
   move(){
-    let mouse = createVector(mouseX, mouseY);
-    let dir = p5.Vector.sub(mouse, this.location);
-    dir.normalize();
-    dir.mult(0.3);
-    this.acceleration = dir;
+    // let mouse = createVector(mouseX, mouseY);
+    // let dir = p5.Vector.sub(mouse, this.location);
+    // dir.normalize();
+    // dir.mult(0.3);
+    // this.acceleration = dir;
 
     this.velocity.add(this.acceleration);
     this.velocity.limit(this.maxVelocity);
     this.location.add(this.velocity);
+    this.acceleration.mult(0);
   }
 
-  edges(){
-    if (this.location.x < 0) this.location.x = width;
-    else if (this.location.x > width) this.location.x = 0;
-    else if (this.location.y < 0) this.location.y = height;
-    else if (this.location.y > height) this.location.y = 0;
+  incrementAge() {
+      this.age -= 1;
+  }
+
+  bounce(){
+    if (this.location.x > width-this.size/2) {
+          this.location.x = width-this.size/2;
+          this.velocity.x *= -1;
+    } else if (this.location.x < this.size/2) {
+          this.velocity.x *= -1;
+          this.location.x = this.size/2;
+    }
+    if (this.location.y > height-this.size/2) {
+          this.velocity.y *= -1;
+          this.location.y = height-this.size/2;
+    }
+  }
+
+  applyForce(force){
+    this.acceleration.add(force);
   }
 
   run(){
     this.draw();
     this.move();
-    // this.edges();
+    this.bounce();
+    this.incrementAge();
   }
 }
